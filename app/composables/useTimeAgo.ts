@@ -11,6 +11,13 @@ startTimer()
 
 function plural(n: number, s: string) { return `${n} ${s}${n !== 1 ? 's' : ''} ago` }
 
+function describeDays(days: number) {
+  const approx = Math.round(days * 10) / 10
+  const display = approx % 1 === 0 ? approx.toFixed(0) : approx.toFixed(1)
+  const unit = Number(display) === 1 ? 'day' : 'days'
+  return `about ${display} ${unit} ago`
+}
+
 function computeAgo(date: string | number | Date) {
   if (!date) return ''
   const d = new Date(date).getTime()
@@ -21,8 +28,8 @@ function computeAgo(date: string | number | Date) {
   if (m < 60) return plural(m, 'minute')
   const h = Math.floor(m / 60)
   if (h < 24) return plural(h, 'hour')
-  const days = Math.floor(h / 24)
-  if (days < 30) return plural(days, 'day')
+  const days = diff / 86_400
+  if (days < 30) return describeDays(days)
   const months = Math.floor(days / 30)
   if (months < 12) return plural(months, 'month')
   const years = Math.floor(months / 12)
@@ -48,8 +55,8 @@ export function useTimeAgo() {
       if (m < 60) return `${m} minute${m !== 1 ? 's' : ''} ago`
       const h = Math.floor(m / 60)
       if (h < 24) return `${h} hour${h !== 1 ? 's' : ''} ago`
-      const days = Math.floor(h / 24)
-      if (days < 30) return `${days} day${days !== 1 ? 's' : ''} ago`
+      const days = diff / 86_400
+      if (days < 30) return describeDays(days)
       const months = Math.floor(days / 30)
       if (months < 12) return `${months} month${months !== 1 ? 's' : ''} ago`
       const years = Math.floor(months / 12)
