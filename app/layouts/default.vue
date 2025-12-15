@@ -1,8 +1,9 @@
 <template>
-  <div class="overflow-x-hidden min-h-screen">
+  <div class="overflow-x-hidden min-h-screen flex flex-col">
     <Navbar />
-    <div class="pt-20">
+    <main class="flex-1 pt-20">
       <slot />
-    </div>
+    </main>
+    <Footer />
   </div>
 </template>

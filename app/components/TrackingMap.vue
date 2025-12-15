@@ -1,6 +1,6 @@
 <template>
   <ClientOnly v-if="hasCoords">
-    <div v-if="leafletLoaded" class="h-96 w-full rounded-xl overflow-hidden">
+    <div v-if="leafletLoaded" class="h-full w-full overflow-hidden">
       <LMap 
         ref="mapRef" 
         :zoom="zoom" 
@@ -23,7 +23,7 @@
         </LCircleMarker>
       </LMap>
     </div>
-    <div v-else class="h-96 w-full rounded-xl overflow-hidden bg-base-200 flex items-center justify-center">
+    <div v-else class="h-full w-full overflow-hidden bg-base-200 flex items-center justify-center">
       <span class="loading loading-spinner loading-lg"></span>
     </div>
   </ClientOnly>
