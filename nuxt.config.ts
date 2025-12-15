@@ -8,5 +8,11 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-  css: ["./app/tailwind.css"],
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.API_BASE,
+    },
+  },
+  modules: [],
+  css: ["./app/tailwind.css", "leaflet/dist/leaflet.css"],
 })

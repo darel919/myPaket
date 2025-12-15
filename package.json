@@ -12,10 +12,13 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
+    "@nuxtjs/leaflet": "^1.2.6",
+    "leaflet": "^1.9.4",
     "daisyui": "^5.5.14",
     "nuxt": "^4.2.2",
     "tailwindcss": "^4.1.18",
     "vue": "^3.5.25",
     "vue-router": "^4.6.4"
-  }
+  },
+  "devDependencies": {}
 }
