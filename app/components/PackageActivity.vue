@@ -4,8 +4,8 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-semibold">Active Packages</h2>
         <div class="flex items-center gap-2">
-          <button class="btn btn-soft rounded-full p-4" @click="loadHistory">Refresh</button>
-          <button class="btn btn-soft rounded-full p-4" @click="clearAll">Clear All</button>
+          <button class="btn btn-soft rounded-full p-4" @click="loadHistory" title="Refresh package status"><ListRestart /></button>
+          <button class="btn btn-soft rounded-full p-4 text-red-400" @click="clearAll" title="Delete all packages"><Trash /></button>
         </div>
       </div>
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
@@ -13,7 +13,7 @@
           <div class="p-4 flex gap-4 items-start">
             <div class="flex-1 min-w-0">
               <h3 class="text-lg font-semibold truncate">{{ pkg.alias || pkg.waybill }}</h3>
-              <p class="text-sm text-base-content/70 truncate mt-1">{{ pkg.lastActivity || pkg.lastStatus }}</p>
+              <p class="text-sm text-base-content/70 md:truncate mt-1">{{ pkg.lastActivity || pkg.lastStatus }}</p>
               <div class="flex items-center gap-3 mt-3 text-xs text-base-content/60">
                 <span class="font-medium">{{ pkg.courierName }}</span>
                 <span v-if="pkg.lastLocation">• {{ pkg.lastLocation }}</span>
@@ -44,7 +44,7 @@
           <div class="p-4 flex gap-4 items-start">
             <div class="flex-1 min-w-0">
               <h3 class="text-lg font-semibold truncate">{{ pkg.alias || pkg.waybill }}</h3>
-              <p class="text-sm text-base-content/70 truncate mt-1">{{ pkg.lastActivity || pkg.lastStatus }}</p>
+              <p class="text-sm text-base-content/70 md:truncate mt-1">{{ pkg.lastActivity || pkg.lastStatus }}</p>
               <div class="flex items-center gap-3 mt-3 text-xs text-base-content/60">
                 <span class="font-medium">{{ pkg.courierName }}</span>
                 <span v-if="pkg.lastLocation">• {{ pkg.lastLocation }}</span>
@@ -76,7 +76,7 @@
 <script setup>
 import { usePackageHistory } from '~/composables/usePackageHistory'
 import { useTimeAgo } from '~/composables/useTimeAgo'
-import { Trash2 } from 'lucide-vue-next'
+import { Trash2, ListRestart, Trash } from 'lucide-vue-next'
 import { useSettings } from '~/composables/useSettings'
 
 const runtimeConfig = useRuntimeConfig()
