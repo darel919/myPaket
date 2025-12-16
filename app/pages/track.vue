@@ -6,9 +6,9 @@
     <div v-if="error" class="text-center mt-4 text-red-500">
       {{ error }}
     </div>
-    <div v-if="data" class="mt-4 w-full px-4 xl:px-8">
-      <div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:h-[calc(100vh-7rem)]">
-        <div class="xl:w-[40%] xl:h-full">
+    <div v-if="data" class="mt-3 w-full px-2 sm:px-4 xl:px-8">
+      <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:h-[calc(100vh-7rem)]">
+        <div v-if="hasCoordinates || !isMobile" class="xl:w-[40%] xl:h-full">
           <div class="h-[420px] xl:h-full w-full rounded-2xl border border-base-200 bg-base-100 shadow-lg overflow-hidden">
             <TrackingMap v-if="hasCoordinates" :records="data.records" class="h-full w-full" />
             <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-base-content/60">
@@ -18,7 +18,7 @@
         </div>
         <div class="xl:w-[60%] xl:h-full xl:overflow-y-auto">
           <div class="card w-full bg-base-100 shadow-xl">
-            <div class="card-body">
+            <div class="card-body p-4 sm:p-6">
               <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
                   <h2 class="card-title">Courier: {{ data.courier.name }}</h2>
@@ -73,14 +73,14 @@
               <p>Waybill: {{ data.courier.waybill }}</p>
               <p>ETA: {{ formatDate(data.courier.eta) }}</p>
               <p>Start Date: {{ formatDate(data.courier.startDate) }}</p>
-              <h3 class="text-lg font-semibold mt-4">History:</h3>
-              <ul class="steps steps-vertical mt-4">
+              <h3 class="text-lg font-semibold mt-3">History:</h3>
+              <ul class="steps steps-vertical mt-2">
                 <li v-for="(record, idx) in sortedRecords" :key="record.timestamp || idx" class="step" :class="{ 'step-primary': idx === 0 }" data-content="●">
-                  <div class="text-left border-b-1 border-gray-600 py-4 px-8 w-full max-w-full box-border break-words whitespace-normal">
-                    <p class="text-xl font-light mb-6">{{ record.name }}</p>
-                    <section class="my-2">
-                      <p class="text-lg">Time: {{ formatDate(record.timestamp) }} ({{ timeAgo(record.timestamp) }})</p>
-                      <p class="text-lg">Status: <b>{{ record.status }}</b></p>
+                  <div class="text-left py-2 xl:py-4 px-3 xl:px-8 w-full max-w-full box-border break-words whitespace-normal">
+                    <p class="text-lg font-light mb-3">{{ record.name }}</p>
+                    <section class="my-1">
+                      <p class="text-base sm:text-lg">Time: {{ formatDate(record.timestamp) }} ({{ timeAgo(record.timestamp) }})</p>
+                      <p class="text-base sm:text-lg">Status: <b>{{ record.status }}</b></p>
                     </section>
                     <p v-if="record.location" class="text-sm">From: {{ record.location.name }}</p>
                     <p v-if="record.next_location" class="text-sm">To: {{ record.next_location.name }}</p>
@@ -109,6 +109,8 @@ const loading = ref(false)
 const error = ref('')
 const packageAlias = ref('')
 const isEditingAlias = ref(false)
+const isMobile = ref(false)
+let _mm = null
 
 const currentWaybill = computed(() => String(route.query.waybill || ''))
 
@@ -119,6 +121,20 @@ onMounted(() => {
     packageAlias.value = existing.alias
   }
   fetchTracking()
+
+  if (process.client) {
+    _mm = window.matchMedia('(max-width: 767px)')
+    const _handler = (e) => { isMobile.value = e.matches }
+    isMobile.value = _mm.matches
+    if (_mm.addEventListener) _mm.addEventListener('change', _handler)
+    else _mm.addListener(_handler)
+    onUnmounted(() => {
+      if (!_mm) return
+      if (_mm.removeEventListener) _mm.removeEventListener('change', _handler)
+      else _mm.removeListener(_handler)
+      _mm = null
+    })
+  }
 })
 
 let _trackTimer = null
@@ -248,13 +264,4 @@ watch(
     fetchTracking()
   }
 )
-
-onMounted(() => {
-  const history = getHistory()
-  const existing = history.find(p => p.waybill === currentWaybill.value)
-  if (existing?.alias) {
-    packageAlias.value = existing.alias
-  }
-  fetchTracking()
-})
 </script>
