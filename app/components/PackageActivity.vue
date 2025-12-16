@@ -4,12 +4,12 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-semibold">Active Packages</h2>
         <div class="flex items-center gap-2">
-          <button class="btn btn-soft rounded-full p-4" @click="loadHistory" title="Refresh package status"><ListRestart /></button>
+          <button class="btn btn-soft rounded-full p-4" @click="refreshAll" title="Refresh package status"><ListRestart /></button>
           <button class="btn btn-soft rounded-full p-4 text-red-400" @click="clearAll" title="Delete all packages"><Trash /></button>
         </div>
       </div>
-      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
-        <NuxtLink v-for="pkg in activePackages" :key="pkg.waybill" :to="`/track?waybill=${pkg.waybill}`" class="block overflow-hidden rounded-lg shadow-md bg-base-100 hover:shadow-lg cursor-pointer transition-shadow">
+      <div class="flex flex-col gap-4">
+        <NuxtLink v-for="pkg in activePackages" :key="pkg.waybill" :to="`/track?waybill=${pkg.waybill}`" class="block w-full overflow-hidden rounded-lg shadow-md bg-base-100 hover:shadow-lg cursor-pointer transition-shadow">
           <div class="p-4 flex gap-4 items-start">
             <div class="flex-1 min-w-0">
               <h3 class="text-lg font-semibold truncate">{{ pkg.alias || pkg.waybill }}</h3>
@@ -39,8 +39,8 @@
 
     <div v-if="donePackages.length > 0" class="mb-12">
       <h2 class="text-2xl font-semibold mb-4">Delivered Packages</h2>
-      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
-        <NuxtLink v-for="pkg in donePackages" :key="pkg.waybill" :to="`/track?waybill=${pkg.waybill}`" class="block overflow-hidden rounded-lg bg-base-100">
+      <div class="flex flex-col gap-4">
+        <NuxtLink v-for="pkg in donePackages" :key="pkg.waybill" :to="`/track?waybill=${pkg.waybill}`" class="block w-full overflow-hidden rounded-lg bg-base-100">
           <div class="p-4 flex gap-4 items-start">
             <div class="flex-1 min-w-0">
               <h3 class="text-lg font-semibold truncate">{{ pkg.alias || pkg.waybill }}</h3>
@@ -90,6 +90,11 @@ const loadingStates = ref({})
 const loadHistory = () => {
   activePackages.value = getActivePackages()
   donePackages.value = getDonePackages()
+}
+
+const refreshAll = async () => {
+  loadHistory()
+  await autoFetchActivePackages()
 }
 
 const removeSingle = (waybill) => {

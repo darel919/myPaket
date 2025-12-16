@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-x-hidden min-h-screen flex flex-col">
     <Navbar />
-    <main class="flex-1 pt-20">
+    <main class="flex-1 pt-28 sm:pt-20">
       <slot />
     </main>
     <Footer />
