@@ -19,8 +19,47 @@
         <div class="xl:w-[60%] xl:h-full xl:overflow-y-auto">
           <div class="card w-full bg-base-100 shadow-xl">
             <div class="card-body">
-              <div class="flex items-start justify-between">
-                <h2 class="card-title">Courier: {{ data.courier.name }}</h2>
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                  <h2 class="card-title">Courier: {{ data.courier.name }}</h2>
+                  <div class="mt-2 flex items-center gap-2">
+                    <span class="text-sm text-base-content/60">Package Name:</span>
+                    <div v-if="!isEditingAlias" class="flex items-center gap-2">
+                      <span class="text-sm font-medium">{{ packageAlias || 'Not set' }}</span>
+                      <button
+                        class="btn btn-xs btn-ghost"
+                        @click="isEditingAlias = true"
+                        title="Edit package name"
+                      >
+                        ✏️
+                      </button>
+                    </div>
+                    <div v-else class="flex items-center gap-2">
+                      <input
+                        v-model="packageAlias"
+                        type="text"
+                        placeholder="Enter package name"
+                        class="input input-sm input-bordered"
+                        @keyup.enter="saveAlias"
+                        @keyup.esc="isEditingAlias = false"
+                      />
+                      <button
+                        class="btn btn-xs btn-primary"
+                        @click="saveAlias"
+                        title="Save"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        class="btn btn-xs btn-ghost"
+                        @click="isEditingAlias = false"
+                        title="Cancel"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <button
                   class="btn btn-soft p-4 rounded-full ml-2"
                   @click="fetchTracking"
@@ -60,25 +99,120 @@
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 import { useTimeAgo } from '~/composables/useTimeAgo'
+import { useSettings } from '~/composables/useSettings'
+import { usePackageHistory } from '~/composables/usePackageHistory'
 const { formatDate, timeAgo } = useTimeAgo()
+const { addOrUpdatePackage, updateAlias, getHistory } = usePackageHistory()
+
 const data = ref(null)
 const loading = ref(false)
 const error = ref('')
+const packageAlias = ref('')
+const isEditingAlias = ref(false)
+
+const currentWaybill = computed(() => String(route.query.waybill || ''))
+
+onMounted(() => {
+  const history = getHistory()
+  const existing = history.find(p => p.waybill === currentWaybill.value)
+  if (existing?.alias) {
+    packageAlias.value = existing.alias
+  }
+  fetchTracking()
+})
+
+let _trackTimer = null
+const { settings, getIntervalMs } = useSettings()
+const lastIsDone = ref(false)
+
+const clearTrackTimer = () => {
+  if (_trackTimer) {
+    clearInterval(_trackTimer)
+    _trackTimer = null
+  }
+}
+
+const setupTrackTimer = (isDone) => {
+  clearTrackTimer()
+  lastIsDone.value = !!isDone
+  if (isDone) return
+  const ms = getIntervalMs(settings.value.trackInterval)
+  if (ms > 0) {
+    _trackTimer = setInterval(() => {
+      fetchTracking()
+    }, ms)
+  }
+}
+
+watch(() => settings.value.trackInterval, () => {
+  setupTrackTimer(lastIsDone.value)
+})
+
+onUnmounted(() => {
+  clearTrackTimer()
+})
 
 const fetchTracking = async () => {
-  const currentWaybill = route.query.waybill
-  if (!currentWaybill) return
+  if (!currentWaybill.value) return
   loading.value = true
   error.value = ''
   try {
-    const response = await $fetch(`${runtimeConfig.public.apiBase}/?waybill=${currentWaybill}`)
+    const response = await $fetch(`${runtimeConfig.public.apiBase}/?waybill=${currentWaybill.value}`)
     data.value = response
+    
+    const latestRecord = sortedRecords.value[0]
+    const isDone = latestRecord?.status?.toLowerCase().includes('delivered') || 
+             latestRecord?.status?.toLowerCase().includes('selesai') ||
+             latestRecord?.status?.toLowerCase().includes('complete')
+
+    const lastLocation = latestRecord?.location?.name || latestRecord?.next_location?.name || ''
+    const lastActivity = latestRecord?.name || latestRecord?.status || ''
+
+    addOrUpdatePackage(
+      currentWaybill.value,
+      latestRecord?.status || 'Unknown',
+      response.courier?.name || 'Unknown Courier',
+      isDone,
+      packageAlias.value || undefined,
+      lastLocation,
+      lastActivity, 
+      latestRecord?.timestamp ? new Date(latestRecord.timestamp).toISOString() : undefined
+    )
+    setupTrackTimer(isDone)
   } catch (err) {
     error.value = 'Failed to fetch tracking information'
     console.error(err)
   } finally {
     loading.value = false
   }
+}
+
+const saveAlias = () => {
+  if (currentWaybill.value && packageAlias.value.trim()) {
+    updateAlias(currentWaybill.value, packageAlias.value.trim())
+    
+    if (data.value) {
+      const latestRecord = sortedRecords.value[0]
+      const isDone = latestRecord?.status?.toLowerCase().includes('delivered') || 
+                     latestRecord?.status?.toLowerCase().includes('selesai') ||
+                     latestRecord?.status?.toLowerCase().includes('complete')
+      
+      const lastLocation = latestRecord?.location?.name || latestRecord?.next_location?.name || ''
+      const lastActivity = latestRecord?.name || latestRecord?.status || ''
+
+      addOrUpdatePackage(
+        currentWaybill.value,
+        latestRecord?.status || 'Unknown',
+        data.value.courier?.name || 'Unknown Courier',
+        isDone,
+        packageAlias.value.trim(),
+        lastLocation,
+        lastActivity
+        , latestRecord?.timestamp ? new Date(latestRecord.timestamp).toISOString() : undefined
+      )
+    }
+  }
+  isEditingAlias.value = false
 }
 
 const sortedRecords = computed(() => {
@@ -106,11 +240,21 @@ watch(
       return
     }
     if (newWaybill === oldWaybill) return
+    
+    const history = getHistory()
+    const existing = history.find(p => p.waybill === String(newWaybill))
+    packageAlias.value = existing?.alias || ''
+    
     fetchTracking()
   }
 )
 
 onMounted(() => {
+  const history = getHistory()
+  const existing = history.find(p => p.waybill === currentWaybill.value)
+  if (existing?.alias) {
+    packageAlias.value = existing.alias
+  }
   fetchTracking()
 })
 </script>

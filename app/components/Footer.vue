@@ -7,8 +7,7 @@
             
                 </NuxtLink>
                 <div class="flex flex-col">
-                    <!-- <a href="/about" title="About This Site" class="my-1 text-sm hover:underline">About This Site</a> -->
-                    <!-- <a href="/sitemap.xml" title="Sitemap" class="my-1 text-sm hover:underline">Sitemap</a> -->
+                    <NuxtLink to="/settings" class="my-1 text-sm hover:underline">Settings</NuxtLink>
                 </div>
             </div>
         </div>
