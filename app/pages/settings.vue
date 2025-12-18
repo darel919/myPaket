@@ -10,7 +10,7 @@
         <div>
           <label class="font-medium">Home screen</label>
           <div class="mt-2 flex flex-col gap-2">
-            <label v-for="opt in options" :key="opt.value" class="flex items-center gap-3">
+            <label v-for="opt in optionsHome" :key="opt.value" class="flex items-center gap-3">
               <input type="radio" name="homescreen" :value="opt.value" v-model="settings.homescreenInterval" />
               <span>{{ opt.label }}</span>
             </label>
@@ -20,7 +20,7 @@
         <div>
           <label class="font-medium">Track page</label>
           <div class="mt-2 flex flex-col gap-2">
-            <label v-for="opt in options" :key="opt.value + '_t'" class="flex items-center gap-3">
+            <label v-for="opt in optionsTrack" :key="opt.value + '_t'" class="flex items-center gap-3">
               <input type="radio" name="track" :value="opt.value" v-model="settings.trackInterval" />
               <span>{{ opt.label }}</span>
             </label>
@@ -40,11 +40,18 @@
 import { useSettings } from '~/composables/useSettings'
 const { read, save: saveToStorage, DEFAULT } = useSettings()
 
-const options = [
+const optionsHome = [
   { value: 'disabled', label: 'Disabled' },
-  { value: '12', label: 'Every 12h (default)' },
-  { value: '24', label: 'Every 24h' },
-  { value: '36', label: 'Every 36h' }
+  { value: '6', label: 'Every 6h' },
+  { value: '12', label: 'Every 12h' },
+  { value: '24', label: 'Every 24h' }
+]
+
+const optionsTrack = [
+  { value: 'disabled', label: 'Disabled' },
+  { value: '1', label: 'Every 1h' },
+  { value: '3', label: 'Every 3h' },
+  { value: '6', label: 'Every 6h' }
 ]
 
 const settings = ref(read())

@@ -4,9 +4,12 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-semibold">Active Packages</h2>
         <div class="flex items-center gap-2">
-          <button class="btn btn-soft rounded-full p-4" @click="refreshAll" title="Refresh package status"><ListRestart /></button>
-          <button class="btn btn-soft rounded-full p-4 text-red-400" @click="clearAll" title="Delete all packages"><Trash /></button>
-        </div>
+              <button class="btn btn-soft rounded-full p-4" @click="refreshAll" :disabled="isRefreshing" title="Refresh package status">
+                <span v-if="isRefreshing" class="loading loading-spinner loading-sm mr-2"></span>
+                <ListRestart />
+              </button>
+              <button class="btn btn-soft rounded-full p-4 text-red-400" @click="clearAll" title="Delete all packages"><Trash /></button>
+            </div>
       </div>
       <div class="flex flex-col gap-4">
         <NuxtLink v-for="pkg in activePackages" :key="pkg.waybill" :to="`/track?waybill=${pkg.waybill}`" class="block w-full overflow-hidden rounded-lg shadow-md bg-base-100 hover:shadow-lg cursor-pointer transition-shadow">
@@ -80,12 +83,13 @@ import { Trash2, ListRestart, Trash } from 'lucide-vue-next'
 import { useSettings } from '~/composables/useSettings'
 
 const runtimeConfig = useRuntimeConfig()
-const { getActivePackages, getDonePackages, addOrUpdatePackage, removePackage, getHistory } = usePackageHistory()
+const { getActivePackages, getDonePackages, addOrUpdatePackage, removePackage, getHistory, setFetchedAt } = usePackageHistory()
 const { formatDate, timeAgo } = useTimeAgo()
 
 const activePackages = ref([])
 const donePackages = ref([])
 const loadingStates = ref({})
+const isRefreshing = ref(false)
 
 const loadHistory = () => {
   activePackages.value = getActivePackages()
@@ -94,7 +98,12 @@ const loadHistory = () => {
 
 const refreshAll = async () => {
   loadHistory()
-  await autoFetchActivePackages()
+  isRefreshing.value = true
+  try {
+    await autoFetchActivePackages()
+  } finally {
+    isRefreshing.value = false
+  }
 }
 
 const removeSingle = (waybill) => {
@@ -113,8 +122,8 @@ const clearAll = () => {
 }
 
 const fetchPackageStatus = async (waybill) => {
+  loadingStates.value[waybill] = true
   try {
-    loadingStates.value[waybill] = true
     const response = await $fetch(`${runtimeConfig.public.apiBase}/?waybill=${waybill}`)
 
     const records = response.records || []
@@ -146,8 +155,10 @@ const fetchPackageStatus = async (waybill) => {
     )
 
     loadHistory()
+    return true
   } catch (err) {
     console.error(`Failed to fetch status for ${waybill}:`, err)
+    return false
   } finally {
     loadingStates.value[waybill] = false
   }
@@ -156,9 +167,24 @@ const fetchPackageStatus = async (waybill) => {
 const autoFetchActivePackages = async () => {
   const active = getActivePackages()
   if (active.length === 0) return
+  isRefreshing.value = true
+  try {
+    const results = []
+    for (const pkg of active) {
+      const ok = await fetchPackageStatus(pkg.waybill)
+      results.push(ok)
+    }
 
-  for (const pkg of active) {
-    await fetchPackageStatus(pkg.waybill)
+    const allSuccess = results.length > 0 && results.every(r => r === true)
+    if (allSuccess) {
+      const now = new Date().toISOString()
+      for (const pkg of active) {
+        try { setFetchedAt(pkg.waybill, now) } catch (e) { console.error('Failed to set fetchedAt for', pkg.waybill, e) }
+      }
+      loadHistory()
+    }
+  } finally {
+    isRefreshing.value = false
   }
 }
 

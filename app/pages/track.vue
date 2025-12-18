@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-x-hidden">
+  <div class="overflow-x-hidden mt-8 md:mt-0">
     <div v-if="loading" class="text-center mt-4">
       <span class="loading loading-spinner loading-lg"></span>
     </div>
@@ -8,7 +8,7 @@
     </div>
     <div v-if="data" class="mt-3 w-full px-2 sm:px-4 xl:px-8">
       <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:h-[calc(100vh-7rem)]">
-        <div v-if="hasCoordinates || !isMobile" class="xl:w-[40%] xl:h-full">
+        <div v-if="hasCoordinates" class="xl:w-[40%] xl:h-full">
           <div class="h-[420px] xl:h-full w-full rounded-2xl border border-base-200 bg-base-100 shadow-lg overflow-hidden">
             <TrackingMap v-if="hasCoordinates" :records="data.records" class="h-full w-full" />
             <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-base-content/60">
@@ -16,7 +16,7 @@
             </div>
           </div>
         </div>
-        <div class="xl:w-[60%] xl:h-full xl:overflow-y-auto">
+        <div :class="hasCoordinates ? 'xl:w-[60%] xl:h-full xl:overflow-y-auto' : 'xl:w-full xl:h-full xl:overflow-y-auto mt-8 md:mt-0'">
           <div class="card w-full bg-base-100 shadow-xl">
             <div class="card-body p-4 sm:p-6">
               <div class="flex items-start justify-between mb-4">
@@ -60,19 +60,23 @@
                     </div>
                   </div>
                 </div>
-                <button
-                  class="btn btn-soft p-4 rounded-full ml-2"
-                  @click="fetchTracking"
-                  :disabled="loading"
-                  title="Retry fetch"
-                >
-                  <span v-if="loading" class="loading loading-spinner loading-sm mr-2"></span>
-                  <span v-if="!loading">Refresh</span>
-                </button>
+                <section class="flex items-center gap-2">
+                  <div v-if="!isMobile && lastFetched" class="self-center mr-2 text-sm text-base-content/60">{{ fetchedText }}</div>
+                  <button
+                    class="btn btn-soft p-4 rounded-full"
+                    @click="fetchTracking"
+                    :disabled="loading"
+                    title="Retry fetch"
+                  >
+                    <span v-if="loading" class="loading loading-spinner loading-sm mr-2"></span>
+                    <span v-if="!loading">Refresh</span>
+                  </button>
+                </section>
               </div>
               <p>Waybill: {{ data.courier.waybill }}</p>
-              <p>ETA: {{ formatDate(data.courier.eta) }}</p>
-              <p>Start Date: {{ formatDate(data.courier.startDate) }}</p>
+              <p>ETA: {{ formatDate(data.courier.eta) }} ({{ timeAgo(data.courier.eta) }})</p>
+              <p>Start Date: {{ formatDate(data.courier.startDate) }} ({{ timeAgo(data.courier.startDate) }})</p>
+              <p v-if="isMobile && lastFetched" class="text-sm text-base-content/60 mt-1">{{ fetchedText }}</p>
               <h3 class="text-lg font-semibold mt-3">History:</h3>
               <ul class="steps steps-vertical mt-2">
                 <li v-for="(record, idx) in sortedRecords" :key="record.timestamp || idx" class="step" :class="{ 'step-primary': idx === 0 }" data-content="●">
@@ -101,8 +105,8 @@ const runtimeConfig = useRuntimeConfig()
 import { useTimeAgo } from '~/composables/useTimeAgo'
 import { useSettings } from '~/composables/useSettings'
 import { usePackageHistory } from '~/composables/usePackageHistory'
-const { formatDate, timeAgo } = useTimeAgo()
-const { addOrUpdatePackage, updateAlias, getHistory } = usePackageHistory()
+const { formatDate, timeAgo, timeAgoStr } = useTimeAgo()
+const { addOrUpdatePackage, updateAlias, getHistory, setFetchedAt } = usePackageHistory()
 
 const data = ref(null)
 const loading = ref(false)
@@ -110,7 +114,12 @@ const error = ref('')
 const packageAlias = ref('')
 const isEditingAlias = ref(false)
 const isMobile = ref(false)
+const lastFetched = ref(null)
 let _mm = null
+
+const fetchedText = computed(() => {
+  return lastFetched.value ? `Fetched ${timeAgo(lastFetched.value).value}` : ''
+})
 
 const currentWaybill = computed(() => String(route.query.waybill || ''))
 
@@ -175,6 +184,12 @@ const fetchTracking = async () => {
   try {
     const response = await $fetch(`${runtimeConfig.public.apiBase}/?waybill=${currentWaybill.value}`)
     data.value = response
+    lastFetched.value = new Date().toISOString()
+    try {
+      setFetchedAt(currentWaybill.value, lastFetched.value)
+    } catch (e) {
+      console.error('Failed to record fetchedAt:', e)
+    }
     
     const latestRecord = sortedRecords.value[0]
     const isDone = latestRecord?.status?.toLowerCase().includes('delivered') || 

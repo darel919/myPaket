@@ -5,6 +5,7 @@ export interface PackageRecord {
   lastLocation?: string
   lastActivity?: string
   lastUpdate: string
+  fetchedAt?: string
   courierName: string
   isDone: boolean
   addedAt: string
@@ -44,6 +45,7 @@ export const usePackageHistory = () => {
       lastLocation: lastLocation || existing?.lastLocation,
       lastActivity: lastActivity || existing?.lastActivity,
       lastUpdate: courierUpdatedAt || existing?.lastUpdate || new Date().toISOString(),
+      fetchedAt: existing?.fetchedAt,
       courierName,
       isDone,
       addedAt: existing?.addedAt || new Date().toISOString()
@@ -82,6 +84,15 @@ export const usePackageHistory = () => {
     return getHistory().filter(p => p.isDone)
   }
 
+  const setFetchedAt = (waybill: string, fetchedAt: string) => {
+    const history = getHistory()
+    const idx = history.findIndex(p => p.waybill === waybill)
+    if (idx >= 0) {
+      history[idx].fetchedAt = fetchedAt
+      saveHistory(history)
+    }
+  }
+
   return {
     getHistory,
     addOrUpdatePackage,
@@ -89,5 +100,6 @@ export const usePackageHistory = () => {
     removePackage,
     getActivePackages,
     getDonePackages
+    , setFetchedAt
   }
 }

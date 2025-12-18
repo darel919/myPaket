@@ -1,17 +1,14 @@
 export interface Settings {
-  homescreenInterval: 'disabled' | '12' | '24' | '36'
-  trackInterval: 'disabled' | '12' | '24' | '36'
+  homescreenInterval: 'disabled' | '6' | '12' | '24'
+  trackInterval: 'disabled' | '1' | '3' | '6'
 }
 
 const STORAGE_KEY = 'mypaket_settings'
 
 const DEFAULT: Settings = {
   homescreenInterval: '12',
-  trackInterval: '12'
+  trackInterval: '6'
 }
-
-import { ref, watch } from 'vue'
-
 export const useSettings = () => {
   const read = (): Settings => {
     if (typeof window === 'undefined') return DEFAULT
