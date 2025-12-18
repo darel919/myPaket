@@ -39,7 +39,10 @@ function computeAgo(date: string | number | Date) {
 export function useTimeAgo() {
   const formatDate = (d: string | number | Date) => {
     if (!d) return ''
-    try { return new Date(d).toLocaleString() } catch (e) { return String(d) }
+    try {
+      const dt = new Date(d)
+      return dt.toLocaleString()
+    } catch (e) { return String(d) }
   }
 
   const timeAgo = (d: string | number | Date) => computed(() => computeAgo(d))
